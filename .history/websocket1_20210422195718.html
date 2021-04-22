@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>股票策略</title>
+    <!-- cdn引入ElementUI样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css" />
+  </head>
+  <body>
+    <div id="app">
+      <div class="box">
+        <el-card class="box_card">
+          <el-table stripe :data="tableData1" border style="width: 100%" height="730">
+            <el-table-column prop="policyName" label="策略名称" width="100"> </el-table-column>
+            <el-table-column prop="date" label="日期" width="100"> </el-table-column>
+            <el-table-column prop="stockCode" label="股票代码" width="90"> </el-table-column>
+            <el-table-column prop="stockName" label="股票名称"> </el-table-column>
+            <el-table-column prop="newTime" label="最新时间"> </el-table-column>
+          </el-table>
+          <el-pagination
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+            :current-page="queryInfo.pagenum"
+            :page-sizes="[5, 10, 20, 50]"
+            :page-size="queryInfo.pagesize"
+            layout="sizes, prev, next, jumper"
+            :total="total"
+            :small="true"
+          >
+          </el-pagination>
+        </el-card>
+      </div>
+    </div>
+    <!--cdn引入ElementUI组件必须先引入Vue-->
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <!-- cdn引入ElementUI组件库 -->
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script type="text/javascript" src="condition-template.json"></script>
+    <script type="text/javascript">
+      // 时间戳转换函数
+      function getLocalTime(nS) {
+        return new Date(parseInt(nS) * 1000).Format('yyyy-MM-dd hh:mm:ss')
+      }
+      Date.prototype.Format = function (fmt) {
+        //author: meizz
+        var o = {
+          'M+': this.getMonth() + 1, //月份
+          'd+': this.getDate(), //日
+          'h+': this.getHours(), //小时
+          'm+': this.getMinutes(), //分
+          's+': this.getSeconds(), //秒
+          'q+': Math.floor((this.getMonth() + 3) / 3), //季度
+          S: this.getMilliseconds() //毫秒
+        }
+        if (/(y+)/.test(fmt))
+          fmt = fmt.replace(RegExp.$1, (this.getFullYear() + '').substr(4 - RegExp.$1.length))
+        for (var k in o)
+          if (new RegExp('(' + k + ')').test(fmt))
+            fmt = fmt.replace(
+              RegExp.$1,
+              RegExp.$1.length == 1 ? o[k] : ('00' + o[k]).substr(('' + o[k]).length)
+            )
+        return fmt
+      }
+      // 接受数据
+      var token = 'abcdefg'
+      let ws = new WebSocket('ws://127.0.0.1:8080/test')
+      ws.onopen = function (e) {
+        console.log('链接打开')
+        ws.send(token)
+      }
+      ws.onmessage = function (e) {
+        var json = e.data
+        var obj = JSON.parse(json)
+        // console.info('接受到数据：' + e.data)
+        // console.log(obj)
+        var obj1 = obj.半导体行业一年策略
+        var keys = Object.keys(obj1)
+        var arr = []
+        for (i = 0; i < keys.length; i++) {
+          // console.log(keys[i])
+
+          //一个股票代码一格显示
+          // var obj2 = obj1[keys[i]].substr(0, obj1[keys[i]].length - 1)
+          // console.log(obj2)
+          // var m = obj2.split(',')
+          // for (j = 0; j < m.length; j++) {
+          //   console.log(m[j])
+          //   arr.push({
+          //     policyName: i + 1,
+          //     date: getLocalTime(keys[i]),
+          //     stockCode: obj1[keys[j]],
+          //   })
+          // }
+
+          //一个策略的所有股票代码同格显示
+          arr.push({
+            policyName: i + 1,
+            date: getLocalTime(keys[i]),
+            stockCode: obj1[keys[i]].substr(0, obj1[keys[i]].length - 1) //去掉最后一个逗号
+          })
+        }
+        const vm = new Vue({
+          // 配置对象 options
+          // 配置选项(option)
+          el: '#app', // element: 指定用vue来管理页面中的哪个标签区域
+          methods: {
+            handleSizeChange(newSize) {
+              console.log(`每页 ${newSize} 条`)
+              this.queryInfo.pagesize = newSize
+            },
+            handleCurrentChange(newPage) {
+              console.log(`当前页: ${newPage}`)
+              this.queryInfo.pagenum = newPage
+            }
+          },
+          computed: {
+            tableData1() {
+              return arr.slice(
+                (this.queryInfo.pagenum - 1) * this.queryInfo.pagesize,
+                this.queryInfo.pagenum * this.queryInfo.pagesize
+              )
+            }
+          },
+          data: {
+            msg: '',
+            // tableData: arr,
+            queryInfo: {
+              query: '',
+              // 当前的页数
+              pagenum: 1,
+              // 当前每页显示多少条数据
+              pagesize: 5
+            },
+            total: i
+          }
+        })
+      }
+      ws.onclose = function (e) {
+        console.info(e)
+        alert('连接没有打开，无法访问到数据！')
+        console.log('closed')
+      }
+      ws.onerror = function (e) {
+        console.info(e)
+        console.log('发生异常')
+      }
+    </script>
+    <style></style>
+  </body>
+</html>
